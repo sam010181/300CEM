@@ -17,41 +17,47 @@
 package org.tensorflow.lite.examples.styletransfer
 
 import android.Manifest
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.hardware.camera2.CameraCharacteristics
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.os.Process
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import android.util.Log
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.view.animation.BounceInterpolator
-import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.Switch
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.request.RequestOptions
-import java.io.File
-import java.nio.charset.Charset
-import java.security.MessageDigest
-import java.util.concurrent.Executors
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import org.tensorflow.lite.examples.styletransfer.camera.CameraFragment
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.charset.Charset
+import java.security.MessageDigest
+import java.util.*
+import java.util.concurrent.Executors
+
 
 // This is an arbitrary number we are using to keep tab of the permission
 // request. Where an app has multiple context for requesting permission,
@@ -64,13 +70,15 @@ private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
 private const val TAG = "MainActivity"
 
 class MainActivity :
+
   AppCompatActivity(),
   StyleFragment.OnListFragmentInteractionListener,
-  CameraFragment.OnCaptureFinished {
+  CameraFragment.OnCaptureFinished{
 
   private var isRunningModel = false
   private val stylesFragment: StyleFragment = StyleFragment()
   private var selectedStyle: String = ""
+
 
   private lateinit var cameraFragment: CameraFragment
   private lateinit var viewModel: MLExecutionViewModel
@@ -79,33 +87,41 @@ class MainActivity :
   private lateinit var originalImageView: ImageView
   private lateinit var styleImageView: ImageView
   private lateinit var rerunButton: Button
+  private lateinit var button1: Button
+  private lateinit var drawable: Drawable
+  private lateinit var bitmap: Bitmap
   private lateinit var captureButton: ImageButton
   private lateinit var progressBar: ProgressBar
   private lateinit var horizontalScrollView: HorizontalScrollView
+  private lateinit var file : File
+  private lateinit var modelResult: ModelExecutionResult
 
   private var lastSavedFile = ""
   private var useGPU = false
   private lateinit var styleTransferModelExecutor: StyleTransferModelExecutor
   private val inferenceThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
   private val mainScope = MainScope()
-
+  private lateinit var auth: FirebaseAuth
   private var lensFacing = CameraCharacteristics.LENS_FACING_FRONT
 
   override fun onCreate(savedInstanceState: Bundle?) {
+
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
     val toolbar: Toolbar = findViewById(R.id.toolbar)
     setSupportActionBar(toolbar)
     supportActionBar?.setDisplayShowTitleEnabled(false)
-
+    val path = Environment.getExternalStorageDirectory().toString()
     viewFinder = findViewById(R.id.view_finder)
     resultImageView = findViewById(R.id.result_imageview)
     originalImageView = findViewById(R.id.original_imageview)
     styleImageView = findViewById(R.id.style_imageview)
     captureButton = findViewById(R.id.capture_button)
+    button1 = findViewById(R.id.button1)
     progressBar = findViewById(R.id.progress_circular)
     horizontalScrollView = findViewById(R.id.horizontal_scroll_view)
+
     val useGpuSwitch: Switch = findViewById(R.id.switch_use_gpu)
 
     // Request camera permissions
@@ -154,6 +170,9 @@ class MainActivity :
     rerunButton.setOnClickListener {
       startRunningModel()
     }
+    button1.setOnClickListener {
+      showDialog()
+    }
 
     styleImageView.setOnClickListener {
       if (!isRunningModel) {
@@ -178,7 +197,64 @@ class MainActivity :
     captureButton.animation = animation
     captureButton.animation.start()
   }
+  private fun showDialog() {
+    val input = EditText(this@MainActivity)
+    val builder = AlertDialog.Builder(this)
+    builder.setTitle("Share")
+    builder.setMessage("Please input image name")
+    builder.setPositiveButton(
+      "Share"
+    ) { dialog, which ->
+      Log.d(TAG,input.text.toString())
+      saveToInternalStorage(modelResult.styledImage,input.text.toString());
+    }
+    val lp = LinearLayout.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,
+      LinearLayout.LayoutParams.MATCH_PARENT
+    )
+    input.layoutParams = lp
+    builder.setView(input) // uncomment this line
+    val dialog = builder.create()
+    dialog.show()
+  }
+  private fun saveToInternalStorage(bitmapImage: Bitmap,picturename:String): String? {
+    val cw = ContextWrapper(applicationContext)
+    // path to /data/data/yourapp/app_data/imageDir
+    val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
+    // Create imageDir
+    val mypath = File(directory,"/"+picturename+".jpg")
+    var fos: FileOutputStream? = null
+    try {
+      fos = FileOutputStream(mypath)
+      // Use the compress method on the BitMap object to write image to the OutputStream
+      bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos)
+    } catch (e: Exception) {
+      e.printStackTrace()
+    } finally {
+      Log.d(TAG,mypath.absolutePath)
+      val storage: FirebaseStorage = FirebaseStorage.getInstance()
+      val storageRef: StorageReference = storage.getReference()
+      val mountainsRef: StorageReference = storageRef.child("mountains.jpg")
+      val mountainImagesRef: StorageReference = storageRef.child("images/mountains.jpg")
+      mountainsRef.name == mountainImagesRef.name
+      mountainsRef.path == mountainImagesRef.path
+      val file1 = Uri.fromFile(File(mypath.absolutePath))
+      val riversRef: StorageReference = storageRef.child("images/" + file1.lastPathSegment)
+      val uploadTask = riversRef.putFile(file1)
+      val db = FirebaseFirestore.getInstance()
+      auth = FirebaseAuth.getInstance();
+      val user = FirebaseAuth.getInstance().currentUser
+      val image: MutableMap<String, Any> = HashMap()
+      image["name"] = picturename
+      if (user != null) {
+        image["Uploaded by"] =  user.uid
+      }
+      image["url"] = "https://firebasestorage.googleapis.com/v0/b/cem-68a11.appspot.com/o/images%2F"+picturename+".jpg?alt=media"
 
+      db.collection("Images").document(picturename)[image] = SetOptions.merge()
+    }
+    return directory.absolutePath
+  }
   private fun setImageView(imageView: ImageView, image: Bitmap) {
     Glide.with(baseContext)
       .load(image)
@@ -200,6 +276,8 @@ class MainActivity :
     progressBar.visibility = View.INVISIBLE
     resultImageView.visibility = View.VISIBLE
     setImageView(resultImageView, modelExecutionResult.styledImage)
+    modelResult = modelExecutionResult
+
     val logText: TextView = findViewById(R.id.log_view)
     logText.text = modelExecutionResult.executionLog
     enableControls(true)

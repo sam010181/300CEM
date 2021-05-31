@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "297117451912",
+    "firebase_url": "https://cem-68a11-default-rtdb.firebaseio.com",
+    "project_id": "cem-68a11",
+    "storage_bucket": "cem-68a11.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:297117451912:android:0a5f01c8a42a9a8470413d",
+        "android_client_info": {
+          "package_name": "com.example.a300cem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "297117451912-be0e0n3nijopc3kck4qkiir3q4j773t5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3sjoaNaQ8cP2SDe7WUgbMbJ7q6HTNJq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "297117451912-be0e0n3nijopc3kck4qkiir3q4j773t5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:297117451912:android:bf84c28a501e702c70413d",
+        "android_client_info": {
+          "package_name": "org.tensorflow.lite.examples.styletransfersample"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "297117451912-be0e0n3nijopc3kck4qkiir3q4j773t5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3sjoaNaQ8cP2SDe7WUgbMbJ7q6HTNJq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "297117451912-be0e0n3nijopc3kck4qkiir3q4j773t5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

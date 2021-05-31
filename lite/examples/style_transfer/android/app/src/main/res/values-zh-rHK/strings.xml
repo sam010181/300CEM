@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">風格轉移</string>
+    <string name="gpu" translatable="false">GPU</string>
+    <string name="re_run_model" translatable="false">重開</string>
+    <string name="choose_a_style" translatable="false">選擇一種風格</string>
+    <string name="title_activity_login">登入</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">第一</string>
+    <string name="second_fragment_label">第二</string>
+    <string name="next">之後</string>
+    <string name="previous">之前</string>
+    <string name="login">登入</string>
+    <string name="title_activity_homepage">首頁</string>
+    <string name="title_activity_viewimage">圖片</string>
+    <string name="title_activity_startpage">開始頁</string>
+    <string name="title_activity_main2">風格轉移</string>
+    <string name="register">注冊</string>
+    <string name="email">電子郵件</string>
+    <string name="password">密碼</string>
+    <string name="submit">提交</string>
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="View_Share_Image">查看共享圖像</string>
+    <string name="Your_View_Share_Image">你共享的圖像</string>
+    <string name="share">共享</string>
+    <string name="start">開始</string>
+
+</resources>
